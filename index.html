@@ -131,6 +131,11 @@
   .legend span { display: inline-flex; align-items: center; gap: 6px; }
   .legend .dot { width: 12px; height: 12px; display: inline-block; }
   .edit { display: grid; gap: 10px; padding: 12px; background: var(--bg); border-radius: 8px; }
+  .lista-faltas { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .lista-faltas li { display: flex; gap: 12px; flex-wrap: wrap; }
+  .lista-faltas .fecha { font-weight: 700; color: var(--bad); min-width: 130px; }
+  td.faltas { font-weight: 700; }
+  .sep { border: 0; border-top: 1px solid var(--line); width: 100%; margin: 4px 0; }
 
   /* Pantalla del QR */
   .qr-screen { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
@@ -534,7 +539,8 @@
 
     const cab = nodo('tr', {}, [
       nodo('th', { textContent: 'Alumno' }), nodo('th', { textContent: 'Asistencia' }),
-      nodo('th', { textContent: 'Clases' }), nodo('th', { textContent: 'Una por clase, de la más antigua a la más reciente' }), nodo('th'),
+      nodo('th', { textContent: 'Vino' }), nodo('th', { textContent: 'Faltas' }),
+      nodo('th', { textContent: 'Una por clase, de la más antigua a la más reciente' }), nodo('th'),
     ]);
     const filas = [cab];
     res.forEach(r => {
@@ -552,12 +558,26 @@
         nodo('td', { className: 'name', textContent: r.nombre }),
         nodo('td', {}, [nodo('div', { className: 'pct ' + nv }, [nodo('div', { className: 'bar' }, [nodo('i', { style: 'width:' + r.pct + '%' })]), nodo('b', { textContent: r.pct + '%' })])]),
         nodo('td', { textContent: r.presentes + ' / ' + datos.clases.length }),
+        nodo('td', { className: 'faltas', textContent: datos.clases.length - r.presentes }),
         nodo('td', {}, [nodo('div', { className: 'dots' }, puntos)]),
-        nodo('td', {}, [nodo('button', { className: 'small', textContent: editando === r.id ? 'Cerrar' : 'Editar', onclick: () => { editando = editando === r.id ? null : r.id; pintarAlumnos(); } })]),
+        nodo('td', {}, [nodo('button', { className: 'small', textContent: editando === r.id ? 'Cerrar' : 'Ver', onclick: () => { editando = editando === r.id ? null : r.id; pintarAlumnos(); } })]),
       ]));
       if (editando === r.id) filas.push(filaEdicion(r));
     });
     tabla.replaceChildren(...filas);
+  }
+
+  /** Lista de clases a las que faltó, de la más reciente a la más antigua. */
+  function detalleFaltas(r) {
+    const faltas = datos.clases.filter(c => !r.marcas[c.id]).reverse();
+    if (!faltas.length) return [nodo('p', { className: 'msg ok', textContent: 'No ha faltado a ninguna clase.' })];
+    return [
+      nodo('b', { textContent: 'Faltó ' + faltas.length + (faltas.length === 1 ? ' vez:' : ' veces:') }),
+      nodo('ul', { className: 'lista-faltas' }, faltas.map(c => nodo('li', {}, [
+        nodo('span', { className: 'fecha', textContent: fechaBonita(c.fecha) }),
+        nodo('span', { className: 'muted', textContent: c.tema }),
+      ]))),
+    ];
   }
 
   function filaEdicion(r) {
@@ -565,13 +585,15 @@
     const destino = nodo('select', { id: 'editar-destino' }, [nodo('option', { value: '', textContent: 'Elige al alumno correcto…' }),
       ...datos.alumnos.filter(a => a.id !== r.id).map(a => nodo('option', { value: a.id, textContent: a.nombre }))]);
     const caja = nodo('div', { className: 'edit' }, [
+      ...detalleFaltas(r),
+      nodo('hr', { className: 'sep' }),
       nodo('label', { htmlFor: 'editar-nombre', textContent: 'Cambiar nombre' }),
       nodo('div', { className: 'row' }, [nodo('div', { className: 'grow' }, [nombre]), nodo('button', { className: 'small', textContent: 'Guardar', onclick: () => { editando = null; accion('renombrarAlumno', r.id, nombre.value); } })]),
       nodo('label', { htmlFor: 'editar-destino', textContent: 'Es un duplicado de… (se juntan sus asistencias)' }),
       nodo('div', { className: 'row' }, [nodo('div', { className: 'grow' }, [destino]), nodo('button', { className: 'small', textContent: 'Unir', onclick: () => { if (destino.value) { editando = null; accion('unirAlumnos', r.id, destino.value); } } })]),
       nodo('div', { className: 'row' }, [nodo('button', { className: 'small danger', textContent: 'Quitar de la lista', onclick: () => { editando = null; accion('quitarAlumno', r.id); } })]),
     ]);
-    return nodo('tr', {}, [nodo('td', { colSpan: 5 }, [caja])]);
+    return nodo('tr', {}, [nodo('td', { colSpan: 6 }, [caja])]);
   }
 
   /* ---------- Pantalla del QR ---------- */
