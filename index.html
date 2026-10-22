@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asistencia · Confirmación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Instrument+Serif&display=swap">
+<style>
+  /* Una columna sobria; el rojo de Pentecostés solo marca lo importante. */
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --ink: #1b2233;
+    --muted: #5d6578;
+    --line: #dde1e8;
+    --accent: #a8192e;
+    --accent-ink: #ffffff;
+    --ok: #1f7a4d;
+    --ok-soft: #dff1e7;
+    --warn: #9a6200;
+    --warn-soft: #fbefd6;
+    --bad: #b42318;
+    --bad-soft: #fde4e1;
+    --manual: #2f5fb3;
+    --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --radius: 10px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11141b;
+      --panel: #1a1f29;
+      --ink: #e8ebf2;
+      --muted: #9aa2b4;
+      --line: #2c3341;
+      --accent: #e0505f;
+      --accent-ink: #1a0b0e;
+      --ok: #5fcf96;
+      --ok-soft: #173326;
+      --warn: #e6b45a;
+      --warn-soft: #362a13;
+      --bad: #f2877b;
+      --bad-soft: #3a1c1a;
+      --manual: #7fa6ee;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 var(--font-body);
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 24px 48px;
+  }
+  [hidden] { display: none !important; }
+  h1, h2 { font-family: var(--font-display); font-weight: 400; line-height: 1.1; text-wrap: balance; margin: 0; }
+  h1 { font-size: 2.4rem; }
+  h2 { font-size: 1.7rem; }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 24px; }
+  .narrow { max-width: 440px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; display: grid; gap: 14px; min-width: 0; }
+
+  label { font-weight: 700; font-size: .95rem; }
+  input, select {
+    font: inherit; color: var(--ink); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; padding: 11px 12px; width: 100%;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 2px; }
+  button {
+    font: inherit; font-weight: 700; cursor: pointer; border-radius: 8px; padding: 10px 16px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button.primary:hover { filter: brightness(1.08); }
+  button.small { padding: 6px 10px; font-size: .88rem; }
+  button.danger { color: var(--bad); }
+  button:disabled { opacity: .55; cursor: default; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .grow { flex: 1 1 180px; min-width: 0; }
+  .msg { padding: 10px 12px; border-radius: 8px; font-size: .95rem; }
+  .msg.error { background: var(--bad-soft); color: var(--bad); }
+  .msg.ok { background: var(--ok-soft); color: var(--ok); }
+
+  /* Alumno */
+  .flame { width: 44px; height: 44px; }
+  .done { text-align: center; justify-items: center; padding-block: 36px; }
+  .done .check { width: 72px; height: 72px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); display: grid; place-items: center; }
+
+  /* Admin */
+  .topbar { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+  .tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; color: var(--muted); padding: 10px 14px; }
+  .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+  .stat b { display: block; font-family: var(--font-display); font-weight: 400; font-size: 2.1rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .list { display: grid; }
+  .item { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid var(--line); }
+  .item:first-child { border-top: 0; }
+  .item .grow p:first-child { font-weight: 700; }
+  .pill { font-size: .78rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .pill.abierta { background: var(--ok-soft); color: var(--ok); }
+  .pill.cerrada { background: var(--line); color: var(--muted); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 10px 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-top: 0; white-space: nowrap; }
+  td.name { font-weight: 700; min-width: 160px; }
+  .pct { display: flex; align-items: center; gap: 8px; min-width: 150px; }
+  .pct .bar { flex: 1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .pct .bar i { display: block; height: 100%; }
+  .pct b { width: 3.2em; text-align: right; }
+  .lvl-ok { color: var(--ok); } .lvl-ok i { background: var(--ok); }
+  .lvl-warn { color: var(--warn); } .lvl-warn i { background: var(--warn); }
+  .lvl-bad { color: var(--bad); } .lvl-bad i { background: var(--bad); }
+  .dots { display: flex; gap: 3px; flex-wrap: nowrap; }
+  .dot { width: 18px; height: 18px; padding: 0; border-radius: 4px; border: 1px solid var(--line); background: transparent; }
+  .dot.qr { background: var(--ok); border-color: var(--ok); }
+  .dot.manual { background: var(--manual); border-color: var(--manual); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: .88rem; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .dot { width: 12px; height: 12px; display: inline-block; }
+  .edit { display: grid; gap: 10px; padding: 12px; background: var(--bg); border-radius: 8px; }
+
+  /* Pantalla del QR */
+  .qr-screen { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  @media (max-width: 760px) { .qr-screen { grid-template-columns: 1fr; } }
+  .qr-box { justify-items: center; text-align: center; }
+  #qr { background: #fff; padding: 16px; border-radius: 8px; width: min(100%, 420px); aspect-ratio: 1; max-width: 100%; }
+  #qr img, #qr canvas { width: 100% !important; height: auto !important; }
+  .timer { width: min(100%, 420px); height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .timer i { display: block; height: 100%; background: var(--accent); transition: width 1s linear; }
+  .counter { font-family: var(--font-display); font-size: 4rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .names { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 50vh; overflow-y: auto; }
+  .names li { padding: 6px 10px; background: var(--bg); border-radius: 6px; }
+  .names li.new { animation: entra .6s ease-out; }
+  @keyframes entra { from { background: var(--ok-soft); } }
+  @media (prefers-reduced-motion: reduce) { .names li.new { animation: none; } .timer i { transition: none; } }
+</style>
+</head>
+<body>
+
+<!-- Inicio: alguien abre el enlace sin código -->
+<main class="wrap narrow" data-vista="inicio" hidden>
+  <svg class="flame" viewBox="0 0 48 48" aria-hidden="true"><path fill="var(--accent)" d="M24 4c2 8 12 13 12 25a12 12 0 0 1-24 0c0-6 3-10 6-13 0 5 2 8 5 9-2-8 1-15 1-21z"/></svg>
+  <div class="eyebrow">Catequesis de Confirmación</div>
+  <h1>Escanea el QR de clase para apuntar tu asistencia</h1>
+  <p class="muted">Tu catequista lo enseña en la pantalla al empezar.</p>
+  <p><a id="enlace-admin" href="#" style="color:var(--muted)">Soy catequista</a></p>
+</main>
+
+<!-- Comprobando el QR -->
+<main class="wrap narrow" data-vista="cargando" hidden>
+  <div class="eyebrow">Asistencia</div>
+  <h1>Comprobando el código…</h1>
+</main>
+
+<!-- Error al escanear -->
+<main class="wrap narrow" data-vista="error" hidden>
+  <div class="eyebrow">Asistencia</div>
+  <h1>No se ha podido abrir</h1>
+  <p class="msg error" id="error-texto"></p>
+</main>
+
+<!-- Alumno -->
+<main class="wrap narrow" data-vista="alumno" hidden>
+  <svg class="flame" viewBox="0 0 48 48" aria-hidden="true"><path fill="var(--accent)" d="M24 4c2 8 12 13 12 25a12 12 0 0 1-24 0c0-6 3-10 6-13 0 5 2 8 5 9-2-8 1-15 1-21z"/></svg>
+  <div>
+    <div class="eyebrow" id="al-fecha"></div>
+    <h1 id="al-tema"></h1>
+  </div>
+  <form class="card" id="form-alumno" autocomplete="off">
+    <label for="al-nombre">Tu nombre y primer apellido</label>
+    <input id="al-nombre" list="al-lista" placeholder="Ej.: Lucía Martín" required>
+    <datalist id="al-lista"></datalist>
+    <p class="muted" style="font-size:.9rem">Si ya te apuntaste otro día, elige tu nombre de la lista.</p>
+    <p class="msg error" id="al-error" hidden></p>
+    <button class="primary" id="al-boton" type="submit">Apuntar mi asistencia</button>
+  </form>
+  <div class="card done" id="al-hecho" hidden>
+    <div class="check"><svg width="36" height="36" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <h2 id="al-hecho-titulo"></h2>
+    <p class="muted">Ya puedes guardar el móvil.</p>
+  </div>
+</main>
+
+<!-- Catequista -->
+<main class="wrap" data-vista="admin" hidden>
+  <form class="card narrow" id="login" style="margin:0 auto;width:100%">
+    <div class="eyebrow">Catequista</div>
+    <h2>Entrar al panel</h2>
+    <label for="pin">PIN</label>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="current-password" required>
+    <p class="msg error" id="login-error" hidden></p>
+    <button class="primary" type="submit">Entrar</button>
+  </form>
+
+  <section id="panel" class="wrap" style="max-width:none" hidden>
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">Catequesis de Confirmación</div>
+        <h1>Asistencia</h1>
+      </div>
+      <button class="small" id="salir">Cerrar sesión</button>
+    </div>
+    <div class="stats" id="stats"></div>
+    <p class="msg error" id="panel-error" hidden></p>
+
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="clases" aria-selected="true">Clases</button>
+      <button role="tab" data-tab="alumnos" aria-selected="false">Alumnos</button>
+    </div>
+
+    <div data-panel="clases" class="wrap" style="max-width:none">
+      <form class="card" id="form-clase">
+        <h2>Nueva clase</h2>
+        <div class="row">
+          <div class="grow" style="flex-basis:160px;max-width:200px"><label for="clase-fecha">Fecha</label><input id="clase-fecha" type="date" required></div>
+          <div class="grow" style="flex-basis:240px"><label for="clase-tema">Tema</label><input id="clase-tema" placeholder="Ej.: Los dones del Espíritu Santo"></div>
+        </div>
+        <div class="row"><button class="primary" type="submit">Crear y mostrar QR</button></div>
+      </form>
+      <div class="card">
+        <h2>Clases</h2>
+        <div class="list" id="lista-clases"></div>
+      </div>
+    </div>
+
+    <div data-panel="alumnos" class="wrap" style="max-width:none" hidden>
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <h2>Alumnos</h2>
+          <div class="row">
+            <label for="orden" class="muted" style="font-weight:400">Ordenar</label>
+            <select id="orden" style="width:auto">
+              <option value="nombre">Por nombre</option>
+              <option value="pct-asc">Menos asistencia primero</option>
+              <option value="pct-desc">Más asistencia primero</option>
+            </select>
+          </div>
+        </div>
+        <div class="legend">
+          <span><i class="dot qr"></i>Escaneó el QR</span>
+          <span><i class="dot manual"></i>Marcado a mano</span>
+          <span><i class="dot"></i>Faltó</span>
+          <span>Pulsa un cuadrado para cambiarlo.</span>
+        </div>
+        <div class="scroll"><table id="tabla-alumnos"></table></div>
+        <form class="row" id="form-alumno-nuevo">
+          <input class="grow" id="nuevo-alumno" placeholder="Añadir alumno: nombre y apellido">
+          <button type="submit">Añadir</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="pantalla-qr" hidden>
+    <div class="topbar" style="margin-bottom:20px">
+      <div>
+        <div class="eyebrow" id="qr-fecha"></div>
+        <h1 id="qr-tema"></h1>
+      </div>
+      <div class="row">
+        <button class="small" id="qr-cerrar">Cerrar asistencia</button>
+        <button class="small" id="qr-volver">Volver al panel</button>
+      </div>
+    </div>
+    <div class="qr-screen">
+      <div class="card qr-box">
+        <p><b>Escanea con la cámara del móvil</b></p>
+        <div id="qr"></div>
+        <div class="timer"><i id="qr-timer" style="width:100%"></i></div>
+        <p class="muted" id="qr-aviso">El código cambia cada minuto.</p>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Apuntados</div>
+        <div class="row" style="align-items:baseline"><span class="counter" id="qr-contador">0</span><span class="muted" id="qr-total"></span></div>
+        <p class="muted" style="font-size:.9rem">Cuenta cabezas en clase y compara con este número.</p>
+        <ul class="names" id="qr-nombres"></ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  const $ = s => document.querySelector(s);
+  const PARAMS = new URLSearchParams(location.search);
+  // Identificador de la aplicación web de Google (el código AKfy… de la implementación).
+  const API = PARAMS.get('api') || '';
+  let DATOS = { vista: 'inicio' };
+  const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  async function llamar(fn, ...args) {
+    let r;
+    try {
+      const res = await fetch('https://script.google.com/macros/s/' + encodeURIComponent(API) + '/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ fn: fn, args: args }),
+      });
+      r = await res.json();
+    } catch (e) {
+      throw new Error('No hay conexión. Comprueba los datos o el wifi y vuelve a intentarlo.');
+    }
+    if (!r.ok) throw new Error(r.error);
+    return r.data;
+  }
+  function enlace(extra) {
+    return location.origin + location.pathname + '?api=' + encodeURIComponent(API) + extra;
+  }
+  function leer(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function guardar(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function fechaBonita(iso) {
+    const [a, m, d] = String(iso).split('-').map(Number);
+    if (!a) return iso;
+    const f = new Date(a, m - 1, d);
+    return DIAS[f.getDay()] + ' ' + d + ' ' + MESES[m - 1] + ' ' + a;
+  }
+  function hoyIso() {
+    const f = new Date();
+    return f.getFullYear() + '-' + String(f.getMonth() + 1).padStart(2, '0') + '-' + String(f.getDate()).padStart(2, '0');
+  }
+  function mostrarVista(id) {
+    document.querySelectorAll('[data-vista]').forEach(v => { v.hidden = v.dataset.vista !== id; });
+  }
+  function aviso(el, texto) { el.textContent = texto || ''; el.hidden = !texto; }
+  function nodo(tag, props, hijos) {
+    const n = document.createElement(tag);
+    Object.assign(n, props || {});
+    (hijos || []).forEach(h => n.append(h));
+    return n;
+  }
+
+  /* ---------- Alumno ---------- */
+
+  function idDispositivo() {
+    let d = leer('asis_dispositivo');
+    if (!d) {
+      d = 'd_' + (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+      guardar('asis_dispositivo', d);
+    }
+    return d;
+  }
+
+  function iniciarAlumno() {
+    const clase = DATOS.clase;
+    $('#al-tema').textContent = clase.tema;
+    $('#al-fecha').textContent = fechaBonita(clase.fecha);
+    DATOS.nombres.forEach(n => $('#al-lista').append(nodo('option', { value: n })));
+
+    const previo = leer('asis_clase_' + clase.id);
+    if (previo) return hecho(previo);
+
+    $('#form-alumno').addEventListener('submit', async e => {
+      e.preventDefault();
+      const boton = $('#al-boton');
+      boton.disabled = true;
+      boton.textContent = 'Apuntando…';
+      aviso($('#al-error'));
+      try {
+        const r = await llamar('registrar', DATOS.pase, $('#al-nombre').value, idDispositivo());
+        guardar('asis_clase_' + clase.id, r.nombre);
+        hecho(r.nombre);
+      } catch (err) {
+        aviso($('#al-error'), err.message);
+        boton.disabled = false;
+        boton.textContent = 'Apuntar mi asistencia';
+      }
+    });
+  }
+
+  function hecho(nombre) {
+    $('#form-alumno').hidden = true;
+    $('#al-hecho').hidden = false;
+    $('#al-hecho-titulo').textContent = '¡Apuntado, ' + nombre.split(' ')[0] + '!';
+  }
+
+  /* ---------- Catequista ---------- */
+
+  let pin = null;
+  let datos = null;
+  let editando = null;
+  let borrando = null;
+  let qr = { id: null, reloj: null, lista: null, restante: 60, validez: 60, vistos: new Set(), cargada: false, wake: null };
+
+  function iniciarAdmin() {
+    try { pin = sessionStorage.getItem('asis_pin'); } catch (e) {}
+    $('#clase-fecha').value = hoyIso();
+    if (pin) entrar(pin);
+
+    $('#login').addEventListener('submit', e => { e.preventDefault(); entrar($('#pin').value); });
+    $('#salir').addEventListener('click', () => {
+      try { sessionStorage.removeItem('asis_pin'); } catch (e) {}
+      location.reload();
+    });
+    document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('[data-tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+      document.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== b.dataset.tab; });
+    }));
+    $('#orden').addEventListener('change', pintarAlumnos);
+
+    $('#form-clase').addEventListener('submit', async e => {
+      e.preventDefault();
+      const r = await accion('nuevaClase', $('#clase-fecha').value, $('#clase-tema').value);
+      if (r) { $('#clase-tema').value = ''; abrirQr(r.id); }
+    });
+    $('#form-alumno-nuevo').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (await accion('anadirAlumno', $('#nuevo-alumno').value)) $('#nuevo-alumno').value = '';
+    });
+    $('#qr-volver').addEventListener('click', cerrarPantallaQr);
+    $('#qr-cerrar').addEventListener('click', async () => {
+      if (await accion('cambiarEstado', qr.id, 'cerrada')) cerrarPantallaQr();
+    });
+  }
+
+  async function entrar(valor) {
+    aviso($('#login-error'));
+    try {
+      datos = await llamar('adminDatos', valor);
+      pin = valor;
+      try { sessionStorage.setItem('asis_pin', valor); } catch (e) {}
+      $('#login').hidden = true;
+      $('#panel').hidden = false;
+      pintar();
+    } catch (err) {
+      try { sessionStorage.removeItem('asis_pin'); } catch (e) {}
+      aviso($('#login-error'), err.message);
+    }
+  }
+
+  /** Llama al servidor con el PIN; si devuelve los datos del panel, los repinta. */
+  async function accion(fn, ...args) {
+    aviso($('#panel-error'));
+    try {
+      const r = await llamar(fn, pin, ...args);
+      const nuevos = r && r.datos ? r.datos : r;
+      if (nuevos && nuevos.clases) { datos = nuevos; pintar(); }
+      return r || true;
+    } catch (err) {
+      aviso($('#panel-error'), err.message);
+      return null;
+    }
+  }
+
+  function resumenAlumnos() {
+    const total = datos.clases.length;
+    const presencias = {};
+    datos.asistencias.forEach(a => { (presencias[a.a] = presencias[a.a] || {})[a.c] = a.o; });
+    return datos.alumnos.map(al => {
+      const p = presencias[al.id] || {};
+      const n = datos.clases.filter(c => p[c.id]).length;
+      return { ...al, marcas: p, presentes: n, pct: total ? Math.round(n / total * 100) : 0 };
+    });
+  }
+  function nivel(pct) { return pct >= 75 ? 'lvl-ok' : pct >= 50 ? 'lvl-warn' : 'lvl-bad'; }
+
+  function pintar() {
+    pintarStats();
+    pintarClases();
+    pintarAlumnos();
+  }
+
+  function pintarStats() {
+    const res = resumenAlumnos();
+    const media = res.length ? Math.round(res.reduce((s, r) => s + r.pct, 0) / res.length) : 0;
+    const riesgo = res.filter(r => datos.clases.length && r.pct < 50).length;
+    const cajas = [
+      ['Clases', datos.clases.length],
+      ['Alumnos', datos.alumnos.length],
+      ['Asistencia media', media + '%'],
+      ['Por debajo del 50%', riesgo],
+    ];
+    $('#stats').replaceChildren(...cajas.map(([t, v]) => nodo('div', { className: 'stat' }, [nodo('span', { className: 'eyebrow', textContent: t }), nodo('b', { textContent: v })])));
+  }
+
+  function pintarClases() {
+    const cont = $('#lista-clases');
+    if (!datos.clases.length) {
+      cont.replaceChildren(nodo('p', { className: 'muted', textContent: 'Aún no hay clases. Crea la primera arriba y se abrirá el QR para que los chicos lo escaneen.' }));
+      return;
+    }
+    const cuenta = {};
+    datos.asistencias.forEach(a => { cuenta[a.c] = (cuenta[a.c] || 0) + 1; });
+    const filas = datos.clases.slice().reverse().map(c => {
+      const abierta = c.estado === 'abierta';
+      const botones = [];
+      if (abierta) botones.push(nodo('button', { className: 'small primary', textContent: 'Mostrar QR', onclick: () => abrirQr(c.id) }));
+      botones.push(nodo('button', {
+        className: 'small', textContent: abierta ? 'Cerrar' : 'Reabrir',
+        onclick: () => accion('cambiarEstado', c.id, abierta ? 'cerrada' : 'abierta'),
+      }));
+      if (borrando === c.id) {
+        botones.push(nodo('button', { className: 'small danger', textContent: '¿Borrar clase y su asistencia?', onclick: () => { borrando = null; accion('borrarClase', c.id); } }));
+        botones.push(nodo('button', { className: 'small', textContent: 'No', onclick: () => { borrando = null; pintarClases(); } }));
+      } else {
+        botones.push(nodo('button', { className: 'small danger', textContent: 'Borrar', onclick: () => { borrando = c.id; pintarClases(); } }));
+      }
+      return nodo('div', { className: 'item' }, [
+        nodo('div', { className: 'grow' }, [
+          nodo('p', { textContent: c.tema }),
+          nodo('p', { className: 'muted', textContent: fechaBonita(c.fecha) + ' · ' + (cuenta[c.id] || 0) + ' de ' + datos.alumnos.length + ' asistieron' }),
+        ]),
+        nodo('span', { className: 'pill ' + c.estado, textContent: abierta ? 'Abierta' : 'Cerrada' }),
+        nodo('div', { className: 'row' }, botones),
+      ]);
+    });
+    cont.replaceChildren(...filas);
+  }
+
+  function pintarAlumnos() {
+    const tabla = $('#tabla-alumnos');
+    let res = resumenAlumnos();
+    if (!res.length) {
+      tabla.replaceChildren(nodo('tr', {}, [nodo('td', { className: 'muted', textContent: 'Todavía no hay alumnos. Se añaden solos la primera vez que escanean el QR, o puedes añadirlos abajo.' })]));
+      return;
+    }
+    const orden = $('#orden').value;
+    if (orden === 'pct-asc') res.sort((a, b) => a.pct - b.pct);
+    if (orden === 'pct-desc') res.sort((a, b) => b.pct - a.pct);
+
+    const cab = nodo('tr', {}, [
+      nodo('th', { textContent: 'Alumno' }), nodo('th', { textContent: 'Asistencia' }),
+      nodo('th', { textContent: 'Clases' }), nodo('th', { textContent: 'Una por clase, de la más antigua a la más reciente' }), nodo('th'),
+    ]);
+    const filas = [cab];
+    res.forEach(r => {
+      const nv = nivel(r.pct);
+      const puntos = datos.clases.map(c => {
+        const marca = r.marcas[c.id];
+        return nodo('button', {
+          className: 'dot' + (marca ? ' ' + (marca === 'manual' ? 'manual' : 'qr') : ''),
+          title: fechaBonita(c.fecha) + ' · ' + c.tema + ' · ' + (marca ? 'Vino' : 'Faltó'),
+          ariaLabel: c.tema + ': ' + (marca ? 'vino, pulsa para quitar' : 'faltó, pulsa para marcar'),
+          onclick: () => accion('marcar', c.id, r.id, !marca),
+        });
+      });
+      filas.push(nodo('tr', {}, [
+        nodo('td', { className: 'name', textContent: r.nombre }),
+        nodo('td', {}, [nodo('div', { className: 'pct ' + nv }, [nodo('div', { className: 'bar' }, [nodo('i', { style: 'width:' + r.pct + '%' })]), nodo('b', { textContent: r.pct + '%' })])]),
+        nodo('td', { textContent: r.presentes + ' / ' + datos.clases.length }),
+        nodo('td', {}, [nodo('div', { className: 'dots' }, puntos)]),
+        nodo('td', {}, [nodo('button', { className: 'small', textContent: editando === r.id ? 'Cerrar' : 'Editar', onclick: () => { editando = editando === r.id ? null : r.id; pintarAlumnos(); } })]),
+      ]));
+      if (editando === r.id) filas.push(filaEdicion(r));
+    });
+    tabla.replaceChildren(...filas);
+  }
+
+  function filaEdicion(r) {
+    const nombre = nodo('input', { id: 'editar-nombre', value: r.nombre });
+    const destino = nodo('select', { id: 'editar-destino' }, [nodo('option', { value: '', textContent: 'Elige al alumno correcto…' }),
+      ...datos.alumnos.filter(a => a.id !== r.id).map(a => nodo('option', { value: a.id, textContent: a.nombre }))]);
+    const caja = nodo('div', { className: 'edit' }, [
+      nodo('label', { htmlFor: 'editar-nombre', textContent: 'Cambiar nombre' }),
+      nodo('div', { className: 'row' }, [nodo('div', { className: 'grow' }, [nombre]), nodo('button', { className: 'small', textContent: 'Guardar', onclick: () => { editando = null; accion('renombrarAlumno', r.id, nombre.value); } })]),
+      nodo('label', { htmlFor: 'editar-destino', textContent: 'Es un duplicado de… (se juntan sus asistencias)' }),
+      nodo('div', { className: 'row' }, [nodo('div', { className: 'grow' }, [destino]), nodo('button', { className: 'small', textContent: 'Unir', onclick: () => { if (destino.value) { editando = null; accion('unirAlumnos', r.id, destino.value); } } })]),
+      nodo('div', { className: 'row' }, [nodo('button', { className: 'small danger', textContent: 'Quitar de la lista', onclick: () => { editando = null; accion('quitarAlumno', r.id); } })]),
+    ]);
+    return nodo('tr', {}, [nodo('td', { colSpan: 5 }, [caja])]);
+  }
+
+  /* ---------- Pantalla del QR ---------- */
+
+  async function abrirQr(id) {
+    const clase = datos.clases.find(c => c.id === id);
+    qr.id = id;
+    qr.vistos = new Set();
+    qr.cargada = false;
+    $('#qr-tema').textContent = clase ? clase.tema : '';
+    $('#qr-fecha').textContent = clase ? fechaBonita(clase.fecha) : '';
+    $('#qr-nombres').replaceChildren();
+    $('#qr-contador').textContent = '0';
+    $('#panel').hidden = true;
+    $('#pantalla-qr').hidden = false;
+    window.scrollTo(0, 0);
+    try { qr.wake = await navigator.wakeLock.request('screen'); } catch (e) {}
+    await nuevoCodigo();
+    actualizarLista();
+    qr.reloj = setInterval(tic, 1000);
+    qr.lista = setInterval(actualizarLista, 5000);
+  }
+
+  async function nuevoCodigo() {
+    try {
+      const r = await llamar('codigoQr', pin, qr.id);
+      $('#qr').replaceChildren();
+      const url = enlace('&c=' + encodeURIComponent(r.c) + '&t=' + encodeURIComponent(r.t));
+      new QRCode($('#qr'), { text: url, width: 512, height: 512, correctLevel: QRCode.CorrectLevel.M });
+      qr.restante = qr.validez = r.validez;
+      $('#qr-aviso').textContent = 'El código cambia cada minuto.';
+      $('#qr-timer').style.width = '100%';
+    } catch (err) {
+      $('#qr-aviso').textContent = err.message;
+    }
+  }
+
+  function tic() {
+    qr.restante -= 1;
+    $('#qr-timer').style.width = Math.max(0, qr.restante / qr.validez * 100) + '%';
+    if (qr.restante <= 0) { qr.restante = qr.validez; nuevoCodigo(); }
+  }
+
+  async function actualizarLista() {
+    try {
+      const r = await llamar('estadoClase', pin, qr.id);
+      $('#qr-contador').textContent = r.nombres.length;
+      $('#qr-total').textContent = 'de ' + r.total + ' en la lista';
+      $('#qr-nombres').replaceChildren(...r.nombres.map(n => {
+        const li = nodo('li', { textContent: n });
+        if (!qr.vistos.has(n)) { if (qr.cargada) li.className = 'new'; qr.vistos.add(n); }
+        return li;
+      }));
+      qr.cargada = true;
+    } catch (e) {}
+  }
+
+  async function cerrarPantallaQr() {
+    clearInterval(qr.reloj);
+    clearInterval(qr.lista);
+    try { if (qr.wake) await qr.wake.release(); } catch (e) {}
+    qr.id = null;
+    $('#pantalla-qr').hidden = true;
+    $('#panel').hidden = false;
+    await accion('adminDatos');
+  }
+
+  /* ---------- Arranque ---------- */
+
+  async function arrancar() {
+    $('#enlace-admin').href = enlace('&admin');
+    if (!API) {
+      DATOS = { vista: 'error', mensaje: 'Falta la dirección de la aplicación. Abre el enlace completo que te dieron o escanea el QR de clase.' };
+    } else if (PARAMS.has('admin')) {
+      DATOS = { vista: 'admin' };
+    } else if (PARAMS.get('c') && PARAMS.get('t')) {
+      mostrarVista('cargando');
+      try { DATOS = await llamar('abrirEscaneo', PARAMS.get('c'), PARAMS.get('t')); }
+      catch (err) { DATOS = { vista: 'error', mensaje: err.message }; }
+    }
+    mostrarVista(DATOS.vista);
+    if (DATOS.vista === 'alumno') iniciarAlumno();
+    if (DATOS.vista === 'error') $('#error-texto').textContent = DATOS.mensaje;
+    if (DATOS.vista === 'admin') iniciarAdmin();
+  }
+  arrancar();
+</script>
+</body>
+</html>
