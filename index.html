@@ -297,7 +297,8 @@
   const $ = s => document.querySelector(s);
   const PARAMS = new URLSearchParams(location.search);
   // Identificador de la aplicación web de Google (el código AKfy… de la implementación).
-  const API = PARAMS.get('api') || '';
+  const API_POR_DEFECTO = 'AKfycbwfvsVny__Swnks_hRcGs-NUgfXtgztVCh-a0bCL1dz_6GVCA5RVTYP-U7VAgz6NRm8';
+  const API = PARAMS.get('api') || API_POR_DEFECTO;
   let DATOS = { vista: 'inicio' };
   const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
   const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -318,7 +319,8 @@
     return r.data;
   }
   function enlace(extra) {
-    return location.origin + location.pathname + '?api=' + encodeURIComponent(API) + extra;
+    const api = API === API_POR_DEFECTO ? '' : '&api=' + encodeURIComponent(API);
+    return location.origin + location.pathname + '?' + (extra + api).replace(/^&/, '');
   }
   function leer(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function guardar(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
