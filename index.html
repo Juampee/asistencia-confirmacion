@@ -279,8 +279,7 @@
       <div class="card qr-box">
         <p><b>Escanea con la cámara del móvil</b></p>
         <div id="qr"></div>
-        <div class="timer"><i id="qr-timer" style="width:100%"></i></div>
-        <p class="muted" id="qr-aviso">El código cambia cada minuto.</p>
+        <p class="muted" id="qr-aviso">Sirve hasta que pulses «Cerrar asistencia».</p>
       </div>
       <div class="card">
         <div class="eyebrow">Apuntados</div>
@@ -395,7 +394,7 @@
   let datos = null;
   let editando = null;
   let borrando = null;
-  let qr = { id: null, reloj: null, lista: null, restante: 60, validez: 60, vistos: new Set(), cargada: false, wake: null };
+  let qr = { id: null, lista: null, vistos: new Set(), cargada: false, wake: null };
 
   function iniciarAdmin() {
     try { pin = sessionStorage.getItem('asis_pin'); } catch (e) {}
@@ -592,7 +591,6 @@
     try { qr.wake = await navigator.wakeLock.request('screen'); } catch (e) {}
     await nuevoCodigo();
     actualizarLista();
-    qr.reloj = setInterval(tic, 1000);
     qr.lista = setInterval(actualizarLista, 5000);
   }
 
@@ -602,18 +600,10 @@
       $('#qr').replaceChildren();
       const url = enlace('&c=' + encodeURIComponent(r.c) + '&t=' + encodeURIComponent(r.t));
       new QRCode($('#qr'), { text: url, width: 512, height: 512, correctLevel: QRCode.CorrectLevel.M });
-      qr.restante = qr.validez = r.validez;
-      $('#qr-aviso').textContent = 'El código cambia cada minuto.';
-      $('#qr-timer').style.width = '100%';
+      $('#qr-aviso').textContent = 'Sirve hasta que pulses «Cerrar asistencia».';
     } catch (err) {
       $('#qr-aviso').textContent = err.message;
     }
-  }
-
-  function tic() {
-    qr.restante -= 1;
-    $('#qr-timer').style.width = Math.max(0, qr.restante / qr.validez * 100) + '%';
-    if (qr.restante <= 0) { qr.restante = qr.validez; nuevoCodigo(); }
   }
 
   async function actualizarLista() {
@@ -631,7 +621,6 @@
   }
 
   async function cerrarPantallaQr() {
-    clearInterval(qr.reloj);
     clearInterval(qr.lista);
     try { if (qr.wake) await qr.wake.release(); } catch (e) {}
     qr.id = null;
